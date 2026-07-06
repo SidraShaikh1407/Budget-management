@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Budget</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --page-bg: #F4F8FB;
+    --card-bg: #FFFFFF;
+    --card-border: #E5EDF3;
+    --summary-bg: #D9EAF3;
+    --text-primary: #16222E;
+    --text-secondary: #6E8194;
+    --text-faint: #9CACB9;
+    --accent: #6E96AC;
+    --accent-dark: #4F7488;
+    --track-bg: #E7EEF3;
+    --over: #D2726B;
+    --divider: #C6DAE5;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--page-bg);
+    font-family: 'Nunito', sans-serif;
+    color: var(--text-primary);
+  }
+  body { padding-bottom: 100px; }
+  .wrap { max-width: 480px; margin: 0 auto; padding: 28px 20px 20px; }
+
+  h1.title { font-size: 38px; font-weight: 800; margin: 0 0 4px; letter-spacing: -0.5px; }
+  .subtitle { font-size: 16px; color: var(--text-secondary); margin: 0 0 22px; }
+
+  .summary-card {
+    background: var(--summary-bg);
+    border-radius: 22px;
+    padding: 24px 22px;
+  }
+  .summary-top {
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr;
+    gap: 18px;
+    align-items: start;
+  }
+  .summary-divider-v { background: var(--divider); width: 1px; }
+  .summary-label { font-size: 15px; color: var(--text-secondary); margin-bottom: 6px; }
+  .summary-value { font-size: 26px; font-weight: 800; }
+  .summary-top .summary-value.spent-value { text-align: right; }
+  .summary-top div:last-child .summary-label { text-align: right; }
+  .summary-divider-h { height: 1px; background: var(--divider); margin: 18px 0; }
+  .remaining-value { font-size: 42px; font-weight: 900; letter-spacing: -1px; }
+  .remaining-value.over { color: var(--over); }
+
+  .section-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 28px 0 14px;
+  }
+  .section-title { font-size: 24px; font-weight: 800; }
+  .add-pill {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--summary-bg);
+    color: var(--accent-dark);
+    border: none;
+    border-radius: 999px;
+    padding: 10px 18px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+  }
+  .add-pill:active { transform: scale(0.97); }
+
+  .cat-card {
+    background: var(--card-bg);
+    border: 1.5px solid var(--card-border);
+    border-radius: 20px;
+    padding: 18px 20px;
+    margin-bottom: 14px;
+    cursor: pointer;
+  }
+  .cat-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .cat-name { font-size: 21px; font-weight: 700; }
+  .chevron { color: var(--text-faint); font-size: 20px; }
+  .cat-mid {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .cat-remaining-label { font-size: 14px; color: var(--text-secondary); margin-bottom: 4px; }
+  .cat-remaining-value { font-size: 28px; font-weight: 800; }
+  .cat-remaining-value.over { color: var(--over); }
+  .cat-stats { text-align: right; }
+  .cat-fraction { font-size: 15px; color: var(--text-secondary); margin-bottom: 3px; }
+  .cat-pct { font-size: 14px; color: var(--text-faint); }
+  .progress-track {
+    height: 8px;
+    background: var(--track-bg);
+    border-radius: 6px;
+    margin-top: 14px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 6px;
+  }
+  .progress-fill.over { background: var(--over); }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 10px;
+    color: var(--text-faint);
+    font-size: 16px;
+  }
+
+  .footer-bar {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    display: flex;
+    justify-content: center;
+    padding: 16px 20px calc(16px + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, var(--page-bg) 60%, transparent);
+    pointer-events: none;
+  }
+  .footer-inner {
+    display: flex;
+    gap: 12px;
+    max-width: 480px;
+    width: 100%;
+    pointer-events: auto;
+  }
+  .btn-outline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--card-bg);
+    border: 1.5px solid var(--card-border);
+    border-radius: 999px;
+    padding: 0 20px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+    height: 54px;
+  }
+  .btn-filled {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--accent);
+    border: none;
+    border-radius: 999px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+    height: 54px;
+  }
+  .btn-outline:active, .btn-filled:active { transform: scale(0.98); }
+
+  .sheet-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(22,34,46,0.35);
+    z-index: 50;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .sheet-overlay.open { display: flex; }
+  .sheet {
+    background: var(--card-bg);
+    width: 100%;
+    max-width: 480px;
+    border-radius: 24px 24px 0 0;
+    padding: 22px 22px calc(22px + env(safe-area-inset-bottom));
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  .sheet-handle {
+    width: 40px; height: 4px;
+    background: var(--track-bg);
+    border-radius: 3px;
+    margin: 0 auto 16px;
+  }
+  .sheet-title { font-size: 20px; font-weight: 800; margin: 0 0 16px; }
+  .field-label { font-size: 13px; color: var(--text-secondary); font-weight: 700; margin: 12px 0 6px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .sheet select, .sheet input {
+    width: 100%;
+    font-family: 'Nunito', sans-serif;
+    border: 1.5px solid var(--card-border);
+    border-radius: 12px;
+    padding: 13px 14px;
+    font-size: 16px;
+    background: var(--page-bg);
+    color: var(--text-primary);
+  }
+  .sheet-actions { display: flex; gap: 10px; margin-top: 22px; }
+  .sheet-actions button { flex: 1; height: 50px; border-radius: 999px; font-size: 15px; font-weight: 700; font-family: 'Nunito', sans-serif; cursor: pointer; border: none; }
+  .sheet-cancel { background: var(--track-bg); color: var(--text-secondary); }
+  .sheet-save { background: var(--accent); color: #fff; }
+
+  .detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+  .back-btn { background: var(--card-bg); border: 1.5px solid var(--card-border); border-radius: 999px; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; color: var(--text-primary); }
+  .expense-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--card-bg);
+    border: 1.5px solid var(--card-border);
+    border-radius: 16px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+  .expense-left { display: flex; flex-direction: column; }
+  .expense-note { font-size: 15px; font-weight: 700; }
+  .expense-date { font-size: 13px; color: var(--text-faint); margin-top: 2px; }
+  .expense-right { display: flex; align-items: center; gap: 10px; }
+  .expense-amt { font-size: 16px; font-weight: 800; }
+  .del-btn { background: none; border: none; color: var(--over); font-size: 20px; cursor: pointer; padding: 4px; }
+  .remove-cat-link { text-align: center; margin-top: 8px; }
+  .remove-cat-link button { background: none; border: none; color: var(--over); font-size: 14px; font-weight: 700; cursor: pointer; padding: 10px; font-family: 'Nunito', sans-serif; }
+</style>
+</head>
+<body>
+
+<div class="wrap" id="mainView">
+  <div class="title-block">
+    <h1 class="title">My Budget</h1>
+    <p class="subtitle">Track spending in every category</p>
+  </div>
+
+  <div class="summary-card">
+    <div class="summary-top">
+      <div>
+        <div class="summary-label">Total Budget</div>
+        <div class="summary-value" id="sumBudget">₹0</div>
+      </div>
+      <div class="summary-divider-v"></div>
+      <div>
+        <div class="summary-label">Spent</div>
+        <div class="summary-value spent-value" id="sumSpent">₹0</div>
+      </div>
+    </div>
+    <div class="summary-divider-h"></div>
+    <div class="summary-label">Remaining</div>
+    <div class="remaining-value" id="sumLeft">₹0</div>
+  </div>
+
+  <div class="section-row">
+    <div class="section-title">Categories</div>
+    <button class="add-pill" id="openAddCatBtn"><span>+</span> Add</button>
+  </div>
+
+  <div id="catList"></div>
+</div>
+
+<div class="wrap" id="detailView" style="display:none;">
+  <div class="detail-header">
+    <button class="back-btn" id="backBtn">‹</button>
+    <h1 class="title" id="detailCatName" style="font-size:26px;"></h1>
+  </div>
+  <div class="summary-card" style="margin-bottom:20px;">
+    <div class="summary-top">
+      <div>
+        <div class="summary-label">Budget</div>
+        <div class="summary-value" id="detailBudget">₹0</div>
+      </div>
+      <div class="summary-divider-v"></div>
+      <div>
+        <div class="summary-label">Spent</div>
+        <div class="summary-value spent-value" id="detailSpent">₹0</div>
+      </div>
+    </div>
+    <div class="summary-divider-h"></div>
+    <div class="summary-label">Remaining</div>
+    <div class="remaining-value" id="detailRemaining">₹0</div>
+  </div>
+  <div class="section-title" style="margin-bottom:14px;">Expenses</div>
+  <div id="expenseList"></div>
+  <div class="remove-cat-link"><button id="removeCatBtn">Remove this category</button></div>
+</div>
+
+<div class="footer-bar">
+  <div class="footer-inner">
+    <button class="btn-outline" id="footerCategoryBtn">📁 Category</button>
+    <button class="btn-filled" id="footerAddExpenseBtn">+ Add Expense</button>
+  </div>
+</div>
+
+<div class="sheet-overlay" id="addCatOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Add category</div>
+    <div class="field-label">Name</div>
+    <input type="text" id="newCatName" placeholder="e.g. Groceries">
+    <div class="field-label">Monthly budget</div>
+    <input type="number" id="newCatBudget" placeholder="e.g. 2000">
+    <div class="sheet-actions">
+      <button class="sheet-cancel" id="cancelAddCat">Cancel</button>
+      <button class="sheet-save" id="saveAddCat">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-overlay" id="addExpOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Add expense</div>
+    <div class="field-label">Category</div>
+    <select id="expCategorySelect"></select>
+    <div class="field-label">Amount</div>
+    <input type="number" id="expAmount" placeholder="e.g. 250">
+    <div class="field-label">Note (optional)</div>
+    <input type="text" id="expNote" placeholder="What was this for?">
+    <div class="sheet-actions">
+      <button class="sheet-cancel" id="cancelAddExp">Cancel</button>
+      <button class="sheet-save" id="saveAddExp">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'budget-ledger-data';
+let data = { categories: [], expenses: [] };
+let currentDetailCatId = null;
+
+function fmt(n) { return '₹' + Math.round(n).toLocaleString('en-IN'); }
+function todayISO() { return new Date().toISOString().slice(0,10); }
+function currentMonth() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+const defaultCategories = [
+  { id: uid(), name: 'Rickshaw', budget: 2100 },
+  { id: uid(), name: 'Metro', budget: 1125 },
+  { id: uid(), name: 'Gold', budget: 10000 },
+  { id: uid(), name: 'Out', budget: 5000 },
+  { id: uid(), name: 'Misc', budget: 1000 },
+  { id: uid(), name: 'Food', budget: 1000 },
+  { id: uid(), name: 'Sadqa', budget: 250 }
+];
+
+async function loadData() {
+  try {
+    const res = await window.storage.get(STORAGE_KEY, false);
+    if (res && res.value) {
+      data = JSON.parse(res.value);
+    } else {
+      data = { categories: defaultCategories, expenses: [] };
+      await saveData();
+    }
+  } catch (e) {
+    data = { categories: defaultCategories, expenses: [] };
+    await saveData();
+  }
+}
+async function saveData() {
+  try { await window.storage.set(STORAGE_KEY, JSON.stringify(data), false); }
+  catch (e) { console.error('Save failed', e); }
+}
+
+function spentForCategory(catId, month) {
+  return data.expenses.filter(e => e.categoryId === catId && e.date.slice(0,7) === month)
+    .reduce((s, e) => s + e.amount, 0);
+}
+
+function renderMain() {
+  const month = currentMonth();
+  const list = document.getElementById('catList');
+  list.innerHTML = '';
+
+  let totalBudget = 0, totalSpent = 0;
+  data.categories.forEach(c => {
+    totalBudget += c.budget;
+    totalSpent += spentForCategory(c.id, month);
+  });
+  document.getElementById('sumBudget').textContent = fmt(totalBudget);
+  document.getElementById('sumSpent').textContent = fmt(totalSpent);
+  const left = totalBudget - totalSpent;
+  const leftEl = document.getElementById('sumLeft');
+  leftEl.textContent = fmt(left);
+  leftEl.classList.toggle('over', left < 0);
+
+  if (data.categories.length === 0) {
+    list.innerHTML = '<div class="empty-state">No categories yet. Tap Add to create one.</div>';
+    return;
+  }
+
+  data.categories.forEach(cat => {
+    const spent = spentForCategory(cat.id, month);
+    const remaining = cat.budget - spent;
+    const pct = cat.budget > 0 ? Math.min(100, Math.round((spent / cat.budget) * 100)) : 0;
+    const over = remaining < 0;
+
+    const card = document.createElement('div');
+    card.className = 'cat-card';
+    card.innerHTML = `
+      <div class="cat-top">
+        <div class="cat-name">${cat.name}</div>
+        <div class="chevron">›</div>
+      </div>
+      <div class="cat-mid">
+        <div>
+          <div class="cat-remaining-label">Remaining</div>
+          <div class="cat-remaining-value ${over ? 'over' : ''}">${fmt(remaining)}</div>
+        </div>
+        <div class="cat-stats">
+          <div class="cat-fraction">${fmt(spent)} / ${fmt(cat.budget)}</div>
+          <div class="cat-pct">${pct}% used</div>
+        </div>
+      </div>
+      <div class="progress-track"><div class="progress-fill ${over ? 'over' : ''}" style="width:${pct}%"></div></div>
+    `;
+    card.addEventListener('click', () => openDetail(cat.id));
+    list.appendChild(card);
+  });
+}
+
+function openDetail(catId) {
+  currentDetailCatId = catId;
+  document.getElementById('mainView').style.display = 'none';
+  document.getElementById('detailView').style.display = 'block';
+  renderDetail();
+}
+function closeDetail() {
+  currentDetailCatId = null;
+  document.getElementById('detailView').style.display = 'none';
+  document.getElementById('mainView').style.display = 'block';
+  renderMain();
+}
+
+function renderDetail() {
+  const cat = data.categories.find(c => c.id === currentDetailCatId);
+  if (!cat) { closeDetail(); return; }
+  const month = currentMonth();
+  const spent = spentForCategory(cat.id, month);
+  const remaining = cat.budget - spent;
+
+  document.getElementById('detailCatName').textContent = cat.name;
+  document.getElementById('detailBudget').textContent = fmt(cat.budget);
+  document.getElementById('detailSpent').textContent = fmt(spent);
+  const remEl = document.getElementById('detailRemaining');
+  remEl.textContent = fmt(remaining);
+  remEl.classList.toggle('over', remaining < 0);
+
+  const expList = document.getElementById('expenseList');
+  expList.innerHTML = '';
+  const monthExpenses = data.expenses.filter(e => e.categoryId === cat.id && e.date.slice(0,7) === month)
+    .sort((a,b) => b.date.localeCompare(a.date));
+
+  if (monthExpenses.length === 0) {
+    expList.innerHTML = '<div class="empty-state">No expenses logged this month.</div>';
+  } else {
+    monthExpenses.forEach(exp => {
+      const row = document.createElement('div');
+      row.className = 'expense-row';
+      row.innerHTML = `
+        <div class="expense-left">
+          <div class="expense-note">${exp.note ? exp.note : 'Expense'}</div>
+          <div class="expense-date">${exp.date.slice(8,10)}/${exp.date.slice(5,7)}/${exp.date.slice(0,4)}</div>
+        </div>
+        <div class="expense-right">
+          <div class="expense-amt">${fmt(exp.amount)}</div>
+          <button class="del-btn" data-id="${exp.id}">×</button>
+        </div>
+      `;
+      expList.appendChild(row);
+    });
+    expList.querySelectorAll('.del-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        data.expenses = data.expenses.filter(e => e.id !== btn.dataset.id);
+        await saveData();
+        renderDetail();
+      });
+    });
+  }
+}
+
+document.getElementById('backBtn').addEventListener('click', closeDetail);
+document.getElementById('removeCatBtn').addEventListener('click', async () => {
+  data.categories = data.categories.filter(c => c.id !== currentDetailCatId);
+  data.expenses = data.expenses.filter(e => e.categoryId !== currentDetailCatId);
+  await saveData();
+  closeDetail();
+});
+
+function openAddCatSheet() { document.getElementById('addCatOverlay').classList.add('open'); }
+function closeAddCatSheet() {
+  document.getElementById('addCatOverlay').classList.remove('open');
+  document.getElementById('newCatName').value = '';
+  document.getElementById('newCatBudget').value = '';
+}
+document.getElementById('openAddCatBtn').addEventListener('click', openAddCatSheet);
+document.getElementById('footerCategoryBtn').addEventListener('click', openAddCatSheet);
+document.getElementById('cancelAddCat').addEventListener('click', closeAddCatSheet);
+document.getElementById('addCatOverlay').addEventListener('click', (e) => { if (e.target.id === 'addCatOverlay') closeAddCatSheet(); });
+document.getElementById('saveAddCat').addEventListener('click', async () => {
+  const name = document.getElementById('newCatName').value.trim();
+  const budget = parseFloat(document.getElementById('newCatBudget').value);
+  if (!name || !budget || budget <= 0) return;
+  data.categories.push({ id: uid(), name, budget });
+  await saveData();
+  closeAddCatSheet();
+  renderMain();
+});
+
+function populateExpCategorySelect() {
+  const sel = document.getElementById('expCategorySelect');
+  sel.innerHTML = '';
+  data.categories.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.name;
+    if (c.id === currentDetailCatId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+function openAddExpSheet() {
+  populateExpCategorySelect();
+  document.getElementById('addExpOverlay').classList.add('open');
+}
+function closeAddExpSheet() {
+  document.getElementById('addExpOverlay').classList.remove('open');
+  document.getElementById('expAmount').value = '';
+  document.getElementById('expNote').value = '';
+}
+document.getElementById('footerAddExpenseBtn').addEventListener('click', openAddExpSheet);
+document.getElementById('cancelAddExp').addEventListener('click', closeAddExpSheet);
+document.getElementById('addExpOverlay').addEventListener('click', (e) => { if (e.target.id === 'addExpOverlay') closeAddExpSheet(); });
+document.getElementById('saveAddExp').addEventListener('click', async () => {
+  const categoryId = document.getElementById('expCategorySelect').value;
+  const amount = parseFloat(document.getElementById('expAmount').value);
+  const note = document.getElementById('expNote').value.trim();
+  if (!categoryId || !amount || amount <= 0) return;
+  data.expenses.push({ id: uid(), categoryId, amount, note, date: todayISO() });
+  await saveData();
+  closeAddExpSheet();
+  if (currentDetailCatId) renderDetail(); else renderMain();
+});
+
+(async function init() {
+  await loadData();
+  renderMain();
+})();
+</script>
+</body>
+</html>

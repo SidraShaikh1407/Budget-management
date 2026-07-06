@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Budget</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<meta name="theme-color" content="#D9EAF3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -358,23 +362,59 @@ const defaultCategories = [
   { id: uid(), name: 'Sadqa', budget: 250 }
 ];
 
-async function loadData() {
-  try {
-    const res = await window.storage.get(STORAGE_KEY, false);
-    if (res && res.value) {
-      data = JSON.parse(res.value);
-    } else {
-      data = { categories: defaultCategories, expenses: [] };
-      await saveData();
-    }
-  } catch (e) {
-    data = { categories: defaultCategories, expenses: [] };
-    await saveData();
-  }
+function loadData() {
+
+
+const saved =
+localStorage.getItem(STORAGE_KEY);
+
+
+
+if(saved){
+
+
+data = JSON.parse(saved);
+
+
 }
-async function saveData() {
-  try { await window.storage.set(STORAGE_KEY, JSON.stringify(data), false); }
-  catch (e) { console.error('Save failed', e); }
+
+else{
+
+
+data = {
+
+categories: defaultCategories,
+
+expenses: []
+
+};
+
+
+saveData();
+
+
+}
+
+
+
+}
+
+
+
+
+
+function saveData(){
+
+
+localStorage.setItem(
+
+STORAGE_KEY,
+
+JSON.stringify(data)
+
+);
+
+
 }
 
 function spentForCategory(catId, month) {
@@ -556,10 +596,16 @@ document.getElementById('saveAddExp').addEventListener('click', async () => {
   if (currentDetailCatId) renderDetail(); else renderMain();
 });
 
-(async function init() {
-  await loadData();
-  renderMain();
-})();
+function init(){
+
+loadData();
+
+renderMain();
+
+}
+
+
+init();
 </script>
 </body>
 </html>

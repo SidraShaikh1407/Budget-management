@@ -4,10 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Budget</title>
-<link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/png" href="icon.png">
-<link rel="apple-touch-icon" href="icon.png">
-<meta name="theme-color" content="#D9EAF3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -35,6 +31,7 @@
   }
   body { padding-bottom: 100px; }
   .wrap { max-width: 480px; margin: 0 auto; padding: 28px 20px 20px; }
+  #detailView { transition: transform 0.25s ease; touch-action: pan-y; }
 
   h1.title { font-size: 38px; font-weight: 800; margin: 0 0 4px; letter-spacing: -0.5px; }
   .subtitle { font-size: 16px; color: var(--text-secondary); margin: 0 0 22px; }
@@ -222,8 +219,9 @@
   .sheet-cancel { background: var(--track-bg); color: var(--text-secondary); }
   .sheet-save { background: var(--accent); color: #fff; }
 
-  .detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
-  .back-btn { background: var(--card-bg); border: 1.5px solid var(--card-border); border-radius: 999px; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; color: var(--text-primary); }
+  .detail-header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  .back-btn { background: var(--card-bg); border: 1.5px solid var(--card-border); border-radius: 999px; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; color: var(--text-primary); flex-shrink: 0; }
+  .detail-header .title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .expense-row {
     display: flex;
     justify-content: space-between;
@@ -281,6 +279,7 @@
   <div class="detail-header">
     <button class="back-btn" id="backBtn">‹</button>
     <h1 class="title" id="detailCatName" style="font-size:26px;"></h1>
+    <button class="back-btn" id="editCatBtn" aria-label="Edit category">✎</button>
   </div>
   <div class="summary-card" style="margin-bottom:20px;">
     <div class="summary-top">
@@ -325,6 +324,21 @@
   </div>
 </div>
 
+<div class="sheet-overlay" id="editCatOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Edit category</div>
+    <div class="field-label">Name</div>
+    <input type="text" id="editCatName" placeholder="e.g. Groceries">
+    <div class="field-label">Monthly budget</div>
+    <input type="number" id="editCatBudget" placeholder="e.g. 2000">
+    <div class="sheet-actions">
+      <button class="sheet-cancel" id="cancelEditCat">Cancel</button>
+      <button class="sheet-save" id="saveEditCat">Save</button>
+    </div>
+  </div>
+</div>
+
 <div class="sheet-overlay" id="addExpOverlay">
   <div class="sheet">
     <div class="sheet-handle"></div>
@@ -362,59 +376,23 @@ const defaultCategories = [
   { id: uid(), name: 'Sadqa', budget: 250 }
 ];
 
-function loadData() {
-
-
-const saved =
-localStorage.getItem(STORAGE_KEY);
-
-
-
-if(saved){
-
-
-data = JSON.parse(saved);
-
-
+async function loadData() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      data = JSON.parse(saved);
+    } else {
+      data = { categories: defaultCategories, expenses: [] };
+      await saveData();
+    }
+  } catch (e) {
+    data = { categories: defaultCategories, expenses: [] };
+    await saveData();
+  }
 }
-
-else{
-
-
-data = {
-
-categories: defaultCategories,
-
-expenses: []
-
-};
-
-
-saveData();
-
-
-}
-
-
-
-}
-
-
-
-
-
-function saveData(){
-
-
-localStorage.setItem(
-
-STORAGE_KEY,
-
-JSON.stringify(data)
-
-);
-
-
+async function saveData() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+  catch (e) { console.error('Save failed', e); }
 }
 
 function spentForCategory(catId, month) {
@@ -542,6 +520,7 @@ document.getElementById('removeCatBtn').addEventListener('click', async () => {
   closeDetail();
 });
 
+// ---- Add category ----
 function openAddCatSheet() { document.getElementById('addCatOverlay').classList.add('open'); }
 function closeAddCatSheet() {
   document.getElementById('addCatOverlay').classList.remove('open');
@@ -562,6 +541,35 @@ document.getElementById('saveAddCat').addEventListener('click', async () => {
   renderMain();
 });
 
+// ---- Edit category ----
+function openEditCatSheet() {
+  const cat = data.categories.find(c => c.id === currentDetailCatId);
+  if (!cat) return;
+  document.getElementById('editCatName').value = cat.name;
+  document.getElementById('editCatBudget').value = cat.budget;
+  document.getElementById('editCatOverlay').classList.add('open');
+}
+function closeEditCatSheet() {
+  document.getElementById('editCatOverlay').classList.remove('open');
+}
+document.getElementById('editCatBtn').addEventListener('click', openEditCatSheet);
+document.getElementById('cancelEditCat').addEventListener('click', closeEditCatSheet);
+document.getElementById('editCatOverlay').addEventListener('click', (e) => { if (e.target.id === 'editCatOverlay') closeEditCatSheet(); });
+document.getElementById('saveEditCat').addEventListener('click', async () => {
+  const cat = data.categories.find(c => c.id === currentDetailCatId);
+  if (!cat) return;
+  const name = document.getElementById('editCatName').value.trim();
+  const budget = parseFloat(document.getElementById('editCatBudget').value);
+  if (!name || !budget || budget <= 0) return;
+  cat.name = name;
+  cat.budget = budget;
+  await saveData();
+  closeEditCatSheet();
+  renderDetail();
+  renderMain();
+});
+
+// ---- Add expense ----
 function populateExpCategorySelect() {
   const sel = document.getElementById('expCategorySelect');
   sel.innerHTML = '';
@@ -596,16 +604,51 @@ document.getElementById('saveAddExp').addEventListener('click', async () => {
   if (currentDetailCatId) renderDetail(); else renderMain();
 });
 
-function init(){
+(async function init() {
+  await loadData();
+  renderMain();
+})();
 
-loadData();
+// ---- Swipe right to go back (detail view) ----
+(function setupSwipeBack() {
+  const detailView = document.getElementById('detailView');
+  let startX = 0, startY = 0, currentX = 0, dragging = false;
 
-renderMain();
+  detailView.addEventListener('touchstart', (e) => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    currentX = startX;
+    dragging = true;
+    detailView.style.transition = 'none';
+  }, { passive: true });
 
-}
+  detailView.addEventListener('touchmove', (e) => {
+    if (!dragging) return;
+    currentX = e.touches[0].clientX;
+    const dx = currentX - startX;
+    const dy = e.touches[0].clientY - startY;
+    if (dx > 0 && Math.abs(dx) > Math.abs(dy)) {
+      detailView.style.transform = `translateX(${dx}px)`;
+    }
+  }, { passive: true });
 
-
-init();
+  detailView.addEventListener('touchend', () => {
+    if (!dragging) return;
+    dragging = false;
+    const dx = currentX - startX;
+    detailView.style.transition = 'transform 0.2s ease';
+    if (dx > 70) {
+      detailView.style.transform = `translateX(100%)`;
+      setTimeout(() => {
+        detailView.style.transition = 'none';
+        detailView.style.transform = '';
+        closeDetail();
+      }, 180);
+    } else {
+      detailView.style.transform = '';
+    }
+  });
+})();
 </script>
 </body>
 </html>
